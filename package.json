@@ -1,0 +1,17 @@
+{
+  "name": "MaxRectsPacking.js",
+  "version": "0.0.1",
+  "description": "A js implementation of MaxRects algorithms for packing rectangles.",
+  "main": "MaxRectsPacking.js",
+  "keywords": [
+    "MaxRects",
+    "packing",
+    "pack",
+    "image"
+  ],
+  "author": "finscn",
+  "license": "MIT",
+  "dependencies": {
+
+  }
+}
