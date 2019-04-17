@@ -1,3 +1,5 @@
+"use strict";
+
 var MaxRectsPacking = MaxRectsPacking || {};
 
 (function(exports) {

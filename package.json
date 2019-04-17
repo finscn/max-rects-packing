@@ -1,8 +1,8 @@
 {
-  "name": "MaxRectsPacking.js",
+  "name": "max-rects-packing",
   "version": "0.0.1",
   "description": "A js implementation of MaxRects algorithms for packing rectangles.",
-  "main": "MaxRectsPacking.js",
+  "main": "src/MaxRectsPacking.js",
   "keywords": [
     "MaxRects",
     "packing",
