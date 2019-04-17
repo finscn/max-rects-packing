@@ -1,16 +1,20 @@
 {
   "name": "max-rects-packing",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A js implementation of MaxRects algorithms for packing rectangles.",
+  "author": "finscn <finscn@gmail.com>",
+  "license": "MIT",
   "main": "src/MaxRectsPacking.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/finscn/max-rects-packing.git"
+  },
   "keywords": [
     "MaxRects",
     "packing",
     "pack",
     "image"
   ],
-  "author": "finscn",
-  "license": "MIT",
   "dependencies": {
 
   }
