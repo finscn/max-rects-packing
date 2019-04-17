@@ -81,19 +81,16 @@ var MaxRectsPacking = MaxRectsPacking || {};
             sortRule = bestRule.sortRule;
         }
 
-        var realWidth = -1;
-        var realHeight = -1;
-
         var result = {
             done: false,
             fitCount: 0,
             rects: [],
             packRule: packRule,
             sortRule: sortRule ? sortRule.ruleName : null,
-            width: realWidth,
-            height: realHeight,
-            realWidth: realWidth,
-            realWidth: realHeight,
+            width: 0,
+            height: 0,
+            realWidth: 0,
+            realHeight: 0,
         };
 
         var inputCount = rectangles.length;
@@ -118,16 +115,15 @@ var MaxRectsPacking = MaxRectsPacking || {};
         (PrepareRule[packRule] || PrepareRule['default'])(rectangles, sortRule, this);
 
         this.processedIndex = -1;
-
         for (var i = 0; i < rectangles.length; i++) {
             var rect = rectangles[i];
 
-            var freeRect = this.findBestFreeRect(packRule, rect.width, rect.height);
+            var freeRect = this.findBestFreeRect(rect.width, rect.height, packRule);
 
             if (!freeRect) {
 
                 if (this.allowRotate) {
-                    freeRect = this.findBestFreeRect(packRule, rect.height, rect.width);
+                    freeRect = this.findBestFreeRect(rect.height, rect.width, packRule);
                 }
 
                 if (!freeRect) {
@@ -152,12 +148,10 @@ var MaxRectsPacking = MaxRectsPacking || {};
                 fitInfo.rotated = true;
             }
 
-            realWidth = Math.max(realWidth, fitInfo.x + fitInfo.width);
-            realHeight = Math.max(realHeight, fitInfo.y + fitInfo.height);
-
             rect.fitInfo = fitInfo;
 
             result.rects.push(rect);
+
             this.processedIndex = i;
         }
 
@@ -180,6 +174,9 @@ var MaxRectsPacking = MaxRectsPacking || {};
                 fitInfo.height -= padding2;
             }
         }
+
+        var realWidth = this.right;
+        var realHeight = this.bottom;
 
         result.realWidth = realWidth;
         result.realHeight = realHeight;
@@ -211,7 +208,73 @@ var MaxRectsPacking = MaxRectsPacking || {};
         return result;
     }
 
-    Packer.prototype.findBestFreeRect = function(packRule, width, height) {
+    /*
+     * @param {Object} rect - the input rectangle for fitting.
+     *        It is like this:  { width: 123, height: 456 }
+     *
+     * @param {String} packRule - The rule for packing
+     *          ShortSideFit, LongSideFit, AreaFit, BottomLeft, ContactPoint
+     *        Default is ShortSideFit.
+     */
+    Packer.prototype.fitOne = function(rect, packRule) {
+
+        packRule = packRule || exports.ShortSideFit;
+
+        if (this.freeRectangles.length === 0) {
+
+            this.right = this.freeSpaceWidth || this.maxWidth;
+            this.bottom = this.freeSpaceHeight || this.maxHeight;
+
+            this.right = Math.min(this.maxWidth, this.right);
+            this.bottom = Math.min(this.maxHeight, this.bottom);
+
+            this.freeRectangles.push(new Rect(0, 0, this.right, this.bottom));
+        }
+
+        var freeRect = null;
+
+        var padding = this.padding || 0;
+        var padding2 = this.padding * 2;
+
+        var width = rect.width + padding2;
+        var height = rect.height + padding2;
+
+        while (true) {
+            var freeRect = this.findBestFreeRect(width, height, packRule);
+
+            if (!freeRect) {
+                if (this.allowRotate) {
+                    freeRect = this.findBestFreeRect(height, width, packRule);
+                }
+                if (!freeRect && this.expandFreeRectangles(width, height, packRule)) {
+                    continue;
+                }
+            }
+
+            break;
+        }
+
+        if (!freeRect) {
+            return null;
+        }
+
+        this._placeRectangle(freeRect);
+
+        var fitInfo = {
+            x: freeRect.x + padding,
+            y: freeRect.y + padding,
+            width: freeRect.width - padding2,
+            height: freeRect.height - padding2,
+        };
+
+        if (width !== freeRect.width || height !== freeRect.height) {
+            fitInfo.rotated = true;
+        }
+
+        return fitInfo;
+    }
+
+    Packer.prototype.findBestFreeRect = function(width, height, packRule) {
         var bestFreeRect = null;
 
         this.freeRectangles.sort(FreeSpaceSortRule[packRule](width, height, this));
