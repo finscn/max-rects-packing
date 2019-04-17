@@ -82,7 +82,7 @@ var MaxRectsPacking = MaxRectsPacking || {};
             fitCount: 0,
             rects: [],
             packRule: packRule,
-            sortRule: sortRule ? sortRule.name : null,
+            sortRule: sortRule ? sortRule.ruleName : null,
             width: realWidth,
             height: realHeight,
             realWidth: realWidth,
@@ -761,7 +761,7 @@ var MaxRectsPacking = MaxRectsPacking || {};
     }
 
     for (var ruleName in SORT) {
-        SORT[ruleName].name = ruleName;
+        SORT[ruleName].ruleName = ruleName;
     }
 
     //////////////////////////////////////////////////////////////////
