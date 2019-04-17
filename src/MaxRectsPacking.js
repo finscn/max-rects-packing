@@ -49,16 +49,23 @@ var MaxRectsPacking = MaxRectsPacking || {};
     }
 
     /*
-     *    packRule: the rule for packing
-     *        ShortSideFit, LongSideFit, AreaFit, BottomLeft, ContactPoint
-     *      if not pass (or pass null), will try all rules and find out the best one.
+     * @param {Array} rectangles - An array of input rectangles.
+     *        The each rectangle is like this:  { width: 123, height: 456 }
      *
-     *    sortRule:  the rule for sorting the input rectangles
-     *        SORT.widthDESC, SORT.heightDESC, SORT.shortSideDESC, SORT.longSideDESC, SORT.areaDESC, SORT.manhattanDESC,
-     *        SORT.widthASC, SORT.heightASC, SORT.shortSideASC, SORT.longSideASC, SORT.areaASC, SORT.manhattanASC
-     *      the default value is SORT.longSideDESC, you can pass your custom sort function.
-     *      if pass `false`, will not do sort.
-     *      if not pass (or pass null), will try all rules and find out the best one.
+     * @param {String} packRule - The rule for packing
+     *          ShortSideFit, LongSideFit, AreaFit, BottomLeft, ContactPoint
+     *        If not pass (or pass null), will try all rules and find out the best one.
+     *
+     * @param {Function} sortRule - The rule for sorting the input rectangles
+     *          SORT.widthDESC, SORT.heightDESC, SORT.shortSideDESC, SORT.longSideDESC, SORT.areaDESC, SORT.manhattanDESC,
+     *          SORT.widthASC, SORT.heightASC, SORT.shortSideASC, SORT.longSideASC, SORT.areaASC, SORT.manhattanASC
+     *        The default value is SORT.longSideDESC, you can pass your custom sort function.
+     *        If pass `false`, will not do sort.
+     *        If not pass (or pass null), will try all rules and find out the best one.
+     *
+     * ( _finding - An internal argument, don't set it. )
+     *
+     * @return {Object} - The result.
      */
     Packer.prototype.fit = function(rectangles, packRule, sortRule, _finding) {
 
