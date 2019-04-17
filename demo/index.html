@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>MaxRectsPacking Demo</title>
+    <link rel="stylesheet" href="style.css">
+    <script type="text/javascript" src="../src/MaxRectsPacking.js"></script>
+    <script type="text/javascript" src="common.js"></script>
+    <script type="text/javascript" src="data.js"></script>
+</head>
+
+<body>
+    <div class="control">
+        <div>rule: <select id="rule" onchange="repack()">
+                <option value="0" selected>Try all rules</option>
+                <option value="1">ShortSideFit</option>
+                <option value="2">LongSideFit</option>
+                <option value="3">AreaFit</option>
+                <option value="4">BottomLeft</option>
+                <option value="5">ContactPoint</option>
+            </select>
+        </div>
+        <div>allowRotate: <input id="allowRotate" type="checkbox" onchange="repack()"></div>
+        <div>pot: <input id="pot" type="checkbox" onchange="repack()"></div>
+        <div>square: <input id="square" type="checkbox" onchange="repack()"></div>
+        <div>padding: <select id="padding" onchange="repack()">
+                <option value="0" selected>0</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+            </select>
+        </div>
+    </div>
+    <div class="output">
+        <h3>max-rects-packing output <span id="out-info-0"></span></h3>
+        <canvas id="texture-0"></canvas>
+    </div>
+    <hr>
+<!--     <div class="output">
+        <h3>MaxRectsBinPack output</h3>
+        <canvas id="texture-1"></canvas>
+    </div>
+    <div class="output">
+        <h3>maxrects-packer output</h3>
+        <canvas id="texture-2"></canvas>
+    </div> -->
+</body>
+
+</html>

@@ -1,0 +1,40 @@
+h3,
+div,
+body {
+    margin: 0;
+    padding: 0;
+}
+
+.control {
+    position: absolute;
+    top:0px;
+    right:0px;
+    /*float: right;*/
+    padding: 10px;
+    border: 1px solid #eeeeee;
+}
+.control div {
+    margin: 10px;
+}
+.output {
+    padding: 20px;
+}
+.output span {
+    background-color: #FFDDCC;
+    padding:4px;
+}
+
+.source {}
+
+.source img {
+    height: 300px;
+    border: 1px solid #aaa;
+}
+
+h3 {
+    margin: 5px;
+}
+
+canvas {
+    border: 1px solid #aaa;
+}
