@@ -47,4 +47,5 @@ function drawRect(ctx, rect, color, borderColor) {
 
 window.onload = function() {
     repack();
+    startPackOne()
 }

@@ -49,8 +49,7 @@ function repack() {
     drawResult(result, "texture-0")
 }
 
-function startPack(rects) {
-    var rule = Number($id("rule").value || 0);
+function createPacker() {
     var allowRotate = $id("allowRotate").checked || false;
     var pot = $id("pot").checked || false;
     var square = $id("square").checked || false;
@@ -61,22 +60,55 @@ function startPack(rects) {
     console.log("pot: ", pot)
     console.log("square: ", square)
     console.log("padding: ", padding)
-    console.log("rule: ", rule)
 
-    rule = RULE_LIST[rule];
-
-    var pack = new MaxRectsPacking.Packer(MAX_TEXTURE_WIDTH, MAX_TEXTURE_HEIGHT, {
+    var packer = new MaxRectsPacking.Packer(MAX_TEXTURE_WIDTH, MAX_TEXTURE_HEIGHT, {
         allowRotate: allowRotate,
         pot: pot,
         square: square,
         padding: padding,
     });
+    return packer;
+}
+
+function startPack(rects) {
+
+    var rule = Number($id("rule").value || 0);
+    console.log("rule: ", rule)
+    rule = RULE_LIST[rule];
+
+    var packer = createPacker();
 
     console.time(" Pack time");
-    var result = pack.fit(rects, rule);
+    var result = packer.fit(rects, rule);
     console.timeEnd(" Pack time");
 
-    console.log(result)
+    console.log(result);
+    return result;
+}
+
+var packerOne;
+function startPackOne(rect) {
+
+    packerOne = createPacker();
+
+    return testPackOne(rect);
+}
+
+function testPackOne(rect) {
+
+    var rule = Number($id("rule").value || 0);
+    console.log("rule: ", rule)
+    rule = RULE_LIST[rule];
+
+    rect = rect || createRandomRect();
+
+    var packer = packerOne || createPacker();
+
+    console.time(" Pack-One time");
+    var result = packer.fitOne(rect, rule);
+    console.timeEnd(" Pack-One time");
+
+    console.log(result);
     return result;
 }
 
