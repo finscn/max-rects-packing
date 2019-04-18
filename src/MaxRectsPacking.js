@@ -87,6 +87,7 @@ var MaxRectsPacking = MaxRectsPacking || {};
             done: false,
             fitCount: 0,
             rects: null,
+            findBestRect: this.findBestRect,
             packRule: packRule,
             sortRule: sortRule ? sortRule.ruleName : (sortRule === false ? "false" : null),
             width: 0,
