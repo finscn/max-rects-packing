@@ -180,8 +180,8 @@ var MaxRectsPacking = MaxRectsPacking || {};
 
         if (this.freeRectangles.length === 0) {
 
-            this.right = this.freeSpaceWidth || this.maxWidth;
-            this.bottom = this.freeSpaceHeight || this.maxHeight;
+            this.right = this.freeSpaceWidth || rect.width || this.maxWidth;
+            this.bottom = this.freeSpaceHeight || rect.height || this.maxHeight;
 
             this.right = Math.min(this.maxWidth, this.right);
             this.bottom = Math.min(this.maxHeight, this.bottom);
@@ -799,11 +799,13 @@ var MaxRectsPacking = MaxRectsPacking || {};
 
 
             // if (packer.square) {
-                estimateWidth = Math.max(rectangles[0].width, rectangles[0].height);
-                estimateHeight = estimateWidth
+            //     estimateWidth = Math.max(rectangles[0].width, rectangles[0].height);
+            //     estimateHeight = estimateWidth
             // } else {
-                // estimateWidth = rectangles[0].width;
-                // estimateHeight = rectangles[0].height;
+            if (rectangles[0]) {
+                estimateWidth = rectangles[0].width;
+                estimateHeight = rectangles[0].height;
+            }
             // }
 
             // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
