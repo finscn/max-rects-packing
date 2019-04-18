@@ -143,11 +143,8 @@ var MaxRectsPacking = MaxRectsPacking || {};
         result.realHeight = realHeight;
         result.realArea = realWidth * realHeight;
 
-        var wp = Math.ceil(Math.log(realWidth) * Math.LOG2E);
-        var hp = Math.ceil(Math.log(realHeight) * Math.LOG2E);
-
-        result.binWidth = 2 ** wp;
-        result.binHeight = 2 ** hp;
+        result.binWidth = Math.pow(2, Math.ceil(Math.log(realWidth) * Math.LOG2E));
+        result.binHeight = Math.pow(2, Math.ceil(Math.log(realHeight) * Math.LOG2E));
         result.binArea = result.binWidth * result.binHeight;
 
         if (this.pot) {
@@ -782,30 +779,40 @@ var MaxRectsPacking = MaxRectsPacking || {};
                 rectangles.sort(sortRule);
             }
 
-            var info = packer._rectanglesInfo;
-
             var estimateWidth;
             var estimateHeight;
 
-            if (packer.square) {
-                // TODO
-                estimateWidth = Math.min(info.hySide, Math.min(packer.maxWidth, packer.maxHeight));
-                estimateHeight = estimateWidth;
-            } else {
-                // TODO
-                estimateWidth = Math.min(info.hyWidth, packer.maxWidth);
-                estimateHeight = Math.min(info.hyHeight, packer.maxHeight);
-            }
+            // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+
+            // var info = packer._rectanglesInfo;
+            // if (packer.square) {
+            //     // TODO
+            //     estimateWidth = Math.min(info.hySide, Math.min(packer.maxWidth, packer.maxHeight));
+            //     estimateHeight = estimateWidth;
+            // } else {
+            //     // TODO
+            //     estimateWidth = Math.min(info.hyWidth, packer.maxWidth);
+            //     estimateHeight = Math.min(info.hyHeight, packer.maxHeight);
+            // }
+            // // estimateWidth = Math.ceil(estimateWidth >> 1);
+            // // estimateHeight = Math.ceil(estimateHeight >> 1);
+
+
+            // if (packer.square) {
+                estimateWidth = Math.max(rectangles[0].width, rectangles[0].height);
+                estimateHeight = estimateWidth
+            // } else {
+                // estimateWidth = rectangles[0].width;
+                // estimateHeight = rectangles[0].height;
+            // }
+
+            // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
             packer.right = packer.freeSpaceWidth || estimateWidth;
             packer.bottom = packer.freeSpaceHeight || estimateHeight;
 
             packer.right = Math.min(packer.maxWidth, packer.right);
             packer.bottom = Math.min(packer.maxHeight, packer.bottom);
-
-            // packer.right = packer.maxWidth;
-            // packer.bottom = packer.maxHeight;
-            // console.log(packer.right, packer.bottom);
 
             packer.freeRectangles.push(new Rect(0, 0, packer.right, packer.bottom));
         },
