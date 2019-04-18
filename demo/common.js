@@ -47,14 +47,20 @@ function drawRect(ctx, rect, color, borderColor) {
         y = -h;
     }
 
-    ctx.fillStyle = borderColor || RECT_BORDER_COLOR;
-    ctx.fillRect(x, y, w, h);
-    ctx.fillStyle = color || RECT_COLOR;
-    ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
+    if (color === null) {
+        ctx.strokeStyle = borderColor || RECT_BORDER_COLOR;
+        ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+    } else {
+        ctx.fillStyle = borderColor || RECT_BORDER_COLOR;
+        ctx.fillRect(x, y, w, h);
+        ctx.fillStyle = color || RECT_COLOR;
+        ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
 
-    ctx.fillStyle = "#000000";
-    ctx.font = "16px";
-    ctx.fillText(index, x + 1, y + 10);
+        ctx.fillStyle = "#000000";
+        ctx.font = "16px";
+        ctx.fillText(index, x + 1, y + 10);
+    }
+
 
 
     ctx.restore();

@@ -56,7 +56,7 @@ function repack(reset) {
     var canvas = $id("texture-0");
     var ctx = canvas.getContext("2d");
     packer.freeRectangles.forEach(function(r, index) {
-        drawRect(ctx, r, "#0000DD", "#00FF00")
+        drawRect(ctx, r, null, "#0000EE")
     });
 
 
