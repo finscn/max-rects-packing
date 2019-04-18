@@ -8,6 +8,7 @@ var MaxRectsPacking = MaxRectsPacking || {};
      * @param {Number} maxWidth - The max width of container
      * @param {Number} maxHeight - The max height of container
      * @param {Object} options - options of packing:
+     *        findBestRect: try to find the best rect for free-boxes
      *        allowRotate:  allow rotate the rects
      *        pot:  use power of 2 sizing
      *        padding:  the border padidng of each rectangle
@@ -19,6 +20,7 @@ var MaxRectsPacking = MaxRectsPacking || {};
     var Packer = function(maxWidth, maxHeight, options) {
         Object.assign(this, {
             allowRotate: false,
+            findBestRect: false,
             pot: false,
             square: false,
             padding: 0,
@@ -68,7 +70,6 @@ var MaxRectsPacking = MaxRectsPacking || {};
      * @return {Object} - The result.
      */
     Packer.prototype.fit = function(rectangles, packRule, sortRule, _finding) {
-
         if (!packRule || (!sortRule && sortRule !== false)) {
             var bestRule = this.findBestRule(rectangles, packRule, sortRule);
             if (!bestRule) {
@@ -79,14 +80,15 @@ var MaxRectsPacking = MaxRectsPacking || {};
             }
             packRule = bestRule.packRule;
             sortRule = bestRule.sortRule;
+            this.findBestRect = bestRule.findBestRect;
         }
 
         var result = {
             done: false,
             fitCount: 0,
-            rects: [],
+            rects: null,
             packRule: packRule,
-            sortRule: sortRule ? sortRule.ruleName : null,
+            sortRule: sortRule ? sortRule.ruleName : (sortRule === false ? "false" : null),
             width: 0,
             height: 0,
             realWidth: 0,
@@ -114,56 +116,19 @@ var MaxRectsPacking = MaxRectsPacking || {};
 
         (PrepareRule[packRule] || PrepareRule['default'])(rectangles, sortRule, this);
 
-        this.processedIndex = -1;
-        for (var i = 0; i < rectangles.length; i++) {
-            var rect = rectangles[i];
+        var outputRects = this.findFreeBoxForRects(rectangles, packRule);
 
-            var freeRect = this.findBestFreeRect(rect.width, rect.height, packRule);
+        result.rects = outputRects;
+        var fitCount = outputRects.length;
 
-            if (!freeRect) {
-
-                if (this.allowRotate) {
-                    freeRect = this.findBestFreeRect(rect.height, rect.width, packRule);
-                }
-
-                if (!freeRect) {
-                    if (this.expandFreeRectangles(rect.width, rect.height, packRule)) {
-                        i--;
-                        continue;
-                    }
-                    break;
-                }
-            }
-
-            this._placeRectangle(freeRect);
-
-            var fitInfo = {
-                x: freeRect.x,
-                y: freeRect.y,
-                width: freeRect.width,
-                height: freeRect.height,
-            };
-
-            if (rect.width !== freeRect.width || rect.height !== freeRect.height) {
-                fitInfo.rotated = true;
-            }
-
-            rect.fitInfo = fitInfo;
-
-            result.rects.push(rect);
-
-            this.processedIndex = i;
-        }
-
-        var fitCount = result.rects.length;
-
+        result.inputCount = inputCount;
         result.fitCount = fitCount;
         result.unfitCount = inputCount - fitCount;
         result.done = result.unfitCount === 0;
 
         if (padding) {
             for (var i = 0; i < fitCount; i++) {
-                var rect = result.rects[i];
+                var rect = outputRects[i];
                 rect.width -= padding2;
                 rect.height -= padding2;
 
@@ -231,70 +196,170 @@ var MaxRectsPacking = MaxRectsPacking || {};
             this.freeRectangles.push(new Rect(0, 0, this.right, this.bottom));
         }
 
-        var freeRect = null;
-
         var padding = this.padding || 0;
-        var padding2 = this.padding * 2;
+        var padding2 = padding * 2;
 
-        var width = rect.width + padding2;
-        var height = rect.height + padding2;
+        rect.width += padding2;
+        rect.height += padding2;
 
-        while (true) {
-            var freeRect = this.findBestFreeRect(width, height, packRule);
+        var outputRects = this.findFreeBoxForRects([rect], packRule);
 
-            if (!freeRect) {
+        rect.width -= padding2;
+        rect.height -= padding2;
+
+        return outputRects[0];
+    }
+
+    Packer.prototype.findFreeBoxForRects = function(rectangles, packRule) {
+        var outputRects = [];
+        var processedFlag = {};
+
+        for (var i = 0; i < rectangles.length; i++) {
+            if (processedFlag[i]) {
+                continue;
+            }
+            var rect = rectangles[i];
+            var w0 = rect.width;
+            var h0 = rect.height;
+
+            var fitRect = this.findBestFreeBox(w0, h0, packRule);
+            if (!fitRect) {
                 if (this.allowRotate) {
-                    freeRect = this.findBestFreeRect(height, width, packRule);
+                    fitRect = this.findBestFreeBox(h0, w0, packRule);
                 }
-                if (!freeRect && this.expandFreeRectangles(width, height, packRule)) {
-                    continue;
+                if (!fitRect) {
+                    if (this.findBestRect) {
+                        var rect2 = null;
+                        var j = i + 1;
+                        for (; j < rectangles.length; j++) {
+                            if (processedFlag[j]) {
+                                continue;
+                            }
+                            rect2 = rectangles[j];
+                            if (rect2.width > w0 && rect2.height > h0) {
+                                break;
+                            }
+                            fitRect = this.findBestFreeBox(rect2.width, rect2.height, packRule);
+                            if (!fitRect && this.allowRotate) {
+                                fitRect = this.findBestFreeBox(rect2.height, rect2.width, packRule);
+                            }
+                            if (fitRect) {
+                                break;
+                            }
+                        }
+                        if (fitRect) {
+                            this.createFitInfo(rect2, fitRect);
+                            outputRects.push(rect2);
+                            processedFlag[j] = true;
+                            i--;
+                            continue;
+                        }
+                    }
+
+                    if (this.expandFreeSpace(w0, h0, packRule)) {
+                        i--;
+                        continue;
+                    }
+                    break;
                 }
             }
 
-            break;
+            this.createFitInfo(rect, fitRect);
+            outputRects.push(rect);
+            processedFlag[i] = true;
         }
 
-        if (!freeRect) {
-            return null;
-        }
+        return outputRects;
+    }
 
-        this._placeRectangle(freeRect);
-
+    Packer.prototype.createFitInfo = function(rect, fitRect) {
         var fitInfo = {
-            x: freeRect.x + padding,
-            y: freeRect.y + padding,
-            width: freeRect.width - padding2,
-            height: freeRect.height - padding2,
+            x: fitRect.x,
+            y: fitRect.y,
+            width: fitRect.width,
+            height: fitRect.height,
         };
 
-        if (width !== freeRect.width || height !== freeRect.height) {
+        if (rect.width !== fitRect.width || rect.height !== fitRect.height) {
             fitInfo.rotated = true;
         }
 
-        return fitInfo;
+        rect.fitInfo = fitInfo;
+
+        this._placeRectangle(fitRect);
     }
 
-    Packer.prototype.findBestFreeRect = function(width, height, packRule) {
-        var bestFreeRect = null;
+    Packer.prototype.findBestFreeBox = function(width, height, packRule) {
+        var bestFreeBox = null;
 
-        this.freeRectangles.sort(FreeSpaceSortRule[packRule](width, height, this));
+        this.freeRectangles.sort(FreeBoxSortRule[packRule](width, height, this));
 
         for (var j = 0; j < this.freeRectangles.length; j++) {
-            var freeRect = this.freeRectangles[j];
-            if (freeRect.width >= width && freeRect.height >= height) {
-                bestFreeRect = freeRect.clone();
-                bestFreeRect.width = width;
-                bestFreeRect.height = height;
+            var freeBox = this.freeRectangles[j];
+            if (freeBox.width >= width && freeBox.height >= height) {
+                bestFreeBox = freeBox.clone();
+                bestFreeBox.width = width;
+                bestFreeBox.height = height;
                 break;
             }
         }
 
-        return bestFreeRect;
+        return bestFreeBox;
     }
 
-    Packer.prototype.findBestRule = function(rectangles, packRule, sortRule) {
-        var packRuleList;
+    //////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////
 
+
+    // Packer.prototype.findRectForFreeBoxes = function(rectangles, packRule) {
+    //     var outputRects = [];
+
+    //     while (rectangles.length > 0) {
+
+    //         var fitRect;
+
+    //         // TODO
+
+    //         this._placeRectangle(fitRect);
+
+    //         var fitInfo = {
+    //             x: fitRect.x,
+    //             y: fitRect.y,
+    //             width: fitRect.width,
+    //             height: fitRect.height,
+    //         };
+
+    //         if (rect.width !== fitRect.width || rect.height !== fitRect.height) {
+    //             fitInfo.rotated = true;
+    //         }
+
+    //         rect.fitInfo = fitInfo;
+
+    //         outputRects.push(rect);
+
+    //     }
+
+    //     return outputRects;
+    // }
+
+    //////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////
+
+
+    Packer.prototype.findBestRule = function(rectangles, packRule, sortRule) {
+        var findBestRectList;
+        var findBestRect = this.findBestRect;
+        if (findBestRect !== false && findBestRect !== true) {
+            findBestRectList = [false, true];
+        } else {
+            findBestRectList = [findBestRect];
+        }
+
+        var packRuleList;
         if (packRule) {
             packRuleList = [
                 packRule
@@ -314,27 +379,33 @@ var MaxRectsPacking = MaxRectsPacking || {};
             sortRuleList = [sortRule]
         } else {
             sortRuleList = [
+                false,
                 SORT.widthDESC, SORT.heightDESC, SORT.shortSideDESC, SORT.longSideDESC, SORT.areaDESC, SORT.manhattanDESC,
                 SORT.widthASC, SORT.heightASC, SORT.shortSideASC, SORT.longSideASC, SORT.areaASC, SORT.manhattanASC
             ]
         }
 
         var resultList = [];
-        sortRuleList.forEach((sortRule, sortIndex) => {
-            packRuleList.forEach((packRule, index) => {
-                this.reset();
-                var result = this.fit(rectangles, packRule, sortRule, true);
-                result._packRuleIndex = index;
-                result._sortRuleIndex = sortIndex;
 
-                if (result.done) {
-                    resultList.push(result);
-                    // console.log(result.packRule, result.realWidth, result.realHeight);
-                }
+        findBestRectList.forEach((_findBestRect, _findBestRectIndex) => {
+            sortRuleList.forEach((sortRule, sortIndex) => {
+                packRuleList.forEach((packRule, packIndex) => {
+                    this.reset();
+                    this.findBestRect = _findBestRect;
+                    var result = this.fit(rectangles, packRule, sortRule, true);
+                    if (result.done) {
+                        result._packRuleIndex = packIndex;
+                        result._sortRuleIndex = sortIndex;
+                        result._findBestRectIndex = _findBestRectIndex;
+                        resultList.push(result);
+                        // console.log(result.packRule, result.realWidth, result.realHeight);
+                    }
+                });
             });
         })
 
 
+        this.findBestRect = findBestRect;
         this.reset();
 
         // resultList.sort((a, b) => {
@@ -361,20 +432,20 @@ var MaxRectsPacking = MaxRectsPacking || {};
 
         var packRule = packRuleList[bestRsult._packRuleIndex]
         var sortRule = sortRuleList[bestRsult._sortRuleIndex];
+        var findBestRect = findBestRectList[bestRsult._findBestRectIndex];
 
         return {
             packRule: packRule,
             sortRule: sortRule,
+            findBestRect: findBestRect,
         };
     }
 
     Packer.prototype._placeRectangle = function(rect) {
-        var numRectanglesToProcess = this.freeRectangles.length;
-        for (var i = 0; i < numRectanglesToProcess; i++) {
-            if (this._splitFreeNode(this.freeRectangles[i], rect)) {
+        for (var i = 0; i < this.freeRectangles.length; i++) {
+            if (this._splitFreeBox(this.freeRectangles[i], rect)) {
                 this.freeRectangles.splice(i, 1);
                 i--;
-                numRectanglesToProcess--;
             }
         }
 
@@ -382,48 +453,55 @@ var MaxRectsPacking = MaxRectsPacking || {};
         this.usedRectangles.push(rect);
     }
 
-    Packer.prototype._splitFreeNode = function(freeNode, rect) {
+    Packer.prototype._splitFreeBox = function(freeBox, rect) {
         var freeRectangles = this.freeRectangles;
         // Test with SAT if the Rectangles even intersect.
 
-        var outOfHoriz = rect.x >= freeNode.x + freeNode.width || rect.x + rect.width <= freeNode.x;
-        var outOfVert = rect.y >= freeNode.y + freeNode.height || rect.y + rect.height <= freeNode.y;
+        var outOfHoriz = rect.x >= freeBox.x + freeBox.width || rect.x + rect.width <= freeBox.x;
+        var outOfVert = rect.y >= freeBox.y + freeBox.height || rect.y + rect.height <= freeBox.y;
 
         if (outOfHoriz || outOfVert) {
             return false;
         }
 
-        var newNode;
-        // New node at the top side of the used node.
-        if (rect.y > freeNode.y) {
-            newNode = freeNode.clone();
-            newNode.height = rect.y - newNode.y;
-            freeRectangles.push(newNode);
+        var newBox;
+
+        // New box at the left side of the used box.
+        if (rect.x > freeBox.x) {
+            newBox = freeBox.clone();
+            newBox.width = rect.x - newBox.x;
+            freeRectangles.push(newBox);
         }
 
-        // New node at the bottom side of the used node.
-        if (rect.y + rect.height < freeNode.y + freeNode.height) {
-            newNode = freeNode.clone();
-            newNode.y = rect.y + rect.height;
-            newNode.height = freeNode.y + freeNode.height - newNode.y;
-            freeRectangles.push(newNode);
-        }
-        // }
-
-        // New node at the left side of the used node.
-        if (rect.x > freeNode.x) {
-            newNode = freeNode.clone();
-            newNode.width = rect.x - newNode.x;
-            freeRectangles.push(newNode);
+        // New box at the top side of the used box.
+        if (rect.y > freeBox.y) {
+            newBox = freeBox.clone();
+            newBox.height = rect.y - newBox.y;
+            freeRectangles.push(newBox);
         }
 
-        // New node at the right side of the used node.
-        if (rect.x + rect.width < freeNode.x + freeNode.width) {
-            newNode = freeNode.clone();
-            newNode.x = rect.x + rect.width;
-            newNode.width = freeNode.x + freeNode.width - newNode.x;
-            freeRectangles.push(newNode);
+
+
+        // New box at the right side of the used box.
+        var right = rect.x + rect.width;
+        var freeRight = freeBox.x + freeBox.width;
+        if (right < freeRight || right < this.maxWidth && right === freeRight && right === this.right) {
+            newBox = freeBox.clone();
+            newBox.x = right;
+            newBox.width = freeRight - newBox.x;
+            freeRectangles.push(newBox);
         }
+
+        // New box at the bottom side of the used box.
+        var bottom = rect.y + rect.height;
+        var freeBottom = freeBox.y + freeBox.height;
+        if (bottom < freeBottom || bottom < this.maxHeight && bottom === freeBottom && bottom === this.bottom) {
+            newBox = freeBox.clone();
+            newBox.y = bottom;
+            newBox.height = freeBottom - newBox.y;
+            freeRectangles.push(newBox);
+        }
+
 
         return true;
     }
@@ -431,13 +509,21 @@ var MaxRectsPacking = MaxRectsPacking || {};
     Packer.prototype._pruneFreeList = function() {
         var freeRectangles = this.freeRectangles;
         for (var i = 0; i < freeRectangles.length; i++) {
+            var box0 = freeRectangles[i];
+            // if (box0.width === 0 && box0.x < this.right ||
+            //     box0.height === 0 && box0.y < this.bottom) {
+            //     console.log("size=0", box0.width, box0.height);
+            //     freeRectangles.splice(i, 1);
+            //     i--;
+            //     continue;
+            // }
             for (var j = i + 1; j < freeRectangles.length; j++) {
-                if (Rect.isContainedIn(freeRectangles[i], freeRectangles[j])) {
+                if (Rect.isContainedIn(box0, freeRectangles[j])) {
                     freeRectangles.splice(i, 1);
                     i--;
                     break;
                 }
-                if (Rect.isContainedIn(freeRectangles[j], freeRectangles[i])) {
+                if (Rect.isContainedIn(freeRectangles[j], box0)) {
                     freeRectangles.splice(j, 1);
                     j--;
                 }
@@ -445,23 +531,23 @@ var MaxRectsPacking = MaxRectsPacking || {};
         }
     }
 
-    Packer.prototype.expandFreeRectangles = function(width, height, packRule) {
+    Packer.prototype.expandFreeSpace = function(width, height, packRule) {
         if (this.right >= this.maxWidth && this.bottom >= this.maxHeight) {
             return false;
         }
+        // return false;
 
         var expandX = width;
         var expandY = height;
 
         var expand = false;
-        var addNewRect = false;
         var rightList = [];
         var bottomList = [];
 
+        var addNewBox = false;
+
         if (this.freeRectangles.length === 0) {
-
-            addNewRect = true;
-
+            addNewBox = true;
         } else {
 
             this.freeRectangles.forEach(rect => {
@@ -480,19 +566,23 @@ var MaxRectsPacking = MaxRectsPacking || {};
                 return a.height - b.height
             })
 
-            var rectRight = rightList.find(function(rect) {
-                return rect.height >= height;
+            var freeBoxRight = rightList.find(function(freeBox) {
+                return freeBox.height >= height;
             });
-            var rectBottom = bottomList.find(function(rect) {
-                return rect.width >= width;
+            var freeBoxBottom = bottomList.find(function(freeBox) {
+                return freeBox.width >= width;
             });
 
-            if (rectRight) {
-                expandX = width - rectRight.width;
+            if (freeBoxRight) {
+                expandX = width - freeBoxRight.width;
             }
-            if (rectBottom) {
-                expandY = height - rectBottom.height;
+            if (freeBoxBottom) {
+                expandY = height - freeBoxBottom.height;
             }
+
+            // if (!freeBoxRight && !freeBoxBottom) {
+            //     addNewBox = true;
+            // }
         }
 
         if (this.square) {
@@ -508,36 +598,40 @@ var MaxRectsPacking = MaxRectsPacking || {};
         var deltaPow2X = Math.ceil(Math.log(newRight) * Math.LOG2E) - pow2X;
         var deltaPow2Y = Math.ceil(Math.log(newBottom) * Math.LOG2E) - pow2Y;
 
-        var firstX = deltaPow2X < deltaPow2Y || areaX <= areaY;
-
         expandX = newRight - this.right;
         expandY = newBottom - this.bottom;
 
         var areaX = expandX * this.bottom;
         var areaY = this.right * expandY;
 
+        var firstX = false;
+        if (expandX > 0) {
+            firstX = (deltaPow2X === deltaPow2Y) ? (areaX <= areaY) : (deltaPow2X < deltaPow2Y);
+            firstX = firstX || expandY === 0;
+        }
+
         if (expandX > 0 && (firstX || this.square)) {
-            if (addNewRect) {
+            if (addNewBox) {
                 this.freeRectangles.push(new Rect(this.right, 0, expandX, this.bottom));
                 expand = true;
             } else {
                 rightList.forEach(function(rect) {
                     rect.width += expandX;
                     expand = true;
-                })
+                });
             }
             this.right = newRight;
         }
 
         if (expandY > 0 && (!firstX || this.square)) {
-            if (addNewRect) {
+            if (addNewBox) {
                 this.freeRectangles.push(new Rect(0, this.bottom, this.right, expandY));
                 expand = true;
             } else {
                 bottomList.forEach(function(rect) {
                     rect.height += expandY;
                     expand = true;
-                })
+                });
             }
             this.bottom = newBottom;
         }
@@ -617,6 +711,44 @@ var MaxRectsPacking = MaxRectsPacking || {};
         return info;
     }
 
+
+    //////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////
+
+
+    function _contactPointScoreBox(x, y, width, height, packer) {
+        var usedRectangles = packer.usedRectangles;
+
+        var score = 0;
+
+        if (x === 0 || x + width === packer.maxWidth) {
+            score += height;
+        }
+        if (y === 0 || y + height === packer.maxHeight) {
+            score += width;
+        }
+        for (var i = 0; i < usedRectangles.length; i++) {
+            var rect = usedRectangles[i];
+            if (rect.x === x + width || rect.x + rect.width === x) {
+                score += _commonIntervalLength(rect.y, rect.y + rect.height, y, y + height);
+            }
+            if (rect.y === y + height || rect.y + rect.height === y) {
+                score += _commonIntervalLength(rect.x, rect.x + rect.width, x, x + width);
+            }
+        }
+        return score;
+    }
+
+    function _commonIntervalLength(start0, end0, start1, end1) {
+        if (end0 < start1 || end1 < start0) {
+            return 0;
+        }
+        return Math.min(end0, end1) - Math.max(start0, start1);
+    }
+
+
     //////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////
@@ -654,11 +786,15 @@ var MaxRectsPacking = MaxRectsPacking || {};
             packer.right = Math.min(packer.maxWidth, packer.right);
             packer.bottom = Math.min(packer.maxHeight, packer.bottom);
 
+            // packer.right = packer.maxWidth;
+            // packer.bottom = packer.maxHeight;
+            // console.log(packer.right, packer.bottom);
+
             packer.freeRectangles.push(new Rect(0, 0, packer.right, packer.bottom));
         },
     }
 
-    var FreeSpaceSortRule = {
+    var FreeBoxSortRule = {
         'ShortSideFit': function(width, height, packer) {
             return function(a, b) {
                 var x0 = a.width - width;
@@ -733,42 +869,105 @@ var MaxRectsPacking = MaxRectsPacking || {};
 
         'ContactPoint': function(width, height, packer) {
             return function(a, b) {
-                var score0 = _contactPointScoreNode(a.x, a.y, width, height, packer);
-                var score1 = _contactPointScoreNode(b.x, b.y, width, height, packer);
+                var score0 = _contactPointScoreBox(a.x, a.y, width, height, packer);
+                var score1 = _contactPointScoreBox(b.x, b.y, width, height, packer);
                 return score1 - score0;
             }
         },
     };
 
-    function _contactPointScoreNode(x, y, width, height, packer) {
-        var usedRectangles = packer.usedRectangles;
 
-        var score = 0;
+    // var InputRectSortRule = {
+    //     'ShortSideFit': function(freeBox, packer) {
+    //         var width = freeBox.width;
+    //         var height = freeBox.height;
+    //         return function(a, b) {
+    //             var x0 = width - a.width;
+    //             var y0 = height - a.height;
+    //             var x1 = width - b.width;
+    //             var y1 = height - b.height;
 
-        if (x === 0 || x + width === packer.maxWidth) {
-            score += height;
-        }
-        if (y === 0 || y + height === packer.maxHeight) {
-            score += width;
-        }
-        for (var i = 0; i < usedRectangles.length; i++) {
-            var rect = usedRectangles[i];
-            if (rect.x === x + width || rect.x + rect.width === x) {
-                score += _commonIntervalLength(rect.y, rect.y + rect.height, y, y + height);
-            }
-            if (rect.y === y + height || rect.y + rect.height === y) {
-                score += _commonIntervalLength(rect.x, rect.x + rect.width, x, x + width);
-            }
-        }
-        return score;
-    }
+    //             var shortSide0 = Math.min(x0, y0);
+    //             var shortSide1 = Math.min(x1, y1);
 
-    function _commonIntervalLength(start0, end0, start1, end1) {
-        if (end0 < start1 || end1 < start0) {
-            return 0;
-        }
-        return Math.min(end0, end1) - Math.max(start0, start1);
-    }
+    //             var d = shortSide0 - shortSide1;
+    //             if (d) {
+    //                 return d;
+    //             }
+
+    //             var longSide0 = Math.min(x0, y0);
+    //             var longSide1 = Math.min(x1, y1);
+
+    //             return longSide0 - longSide1;
+    //         }
+    //     },
+
+    //     'LongSideFit': function(freeBox, packer) {
+    //         var width = freeBox.width;
+    //         var height = freeBox.height;
+    //         return function(a, b) {
+    //             var x0 = width - a.width;
+    //             var y0 = height - a.height;
+    //             var x1 = width - b.width;
+    //             var y1 = height - b.height;
+
+    //             var longSide0 = Math.max(x0, y0);
+    //             var longSide1 = Math.max(x1, y1);
+
+    //             var d = longSide1 - longSide0;
+    //             if (d) {
+    //                 return d;
+    //             }
+
+    //             var shortSide0 = Math.min(x0, y0);
+    //             var shortSide1 = Math.min(x1, y1);
+
+    //             return shortSide1 - shortSide0;
+    //         }
+    //     },
+
+    //     'AreaFit': function(freeBox, packer) {
+    //         var width = freeBox.width;
+    //         var height = freeBox.height;
+    //         return function(a, b) {
+    //             var x0 = width - a.width;
+    //             var y0 = height - a.height;
+    //             var x1 = width - b.width;
+    //             var y1 = height - b.height;
+
+    //             var area0 = x0 * y0;
+    //             var area1 = x1 * y1;
+
+    //             return area0 - area1;
+    //         }
+    //     },
+
+    //     'BottomLeft': function(freeBox, packer) {
+    //         var y = freeBox.y;
+    //         return function(a, b) {
+    //             var topSideY0 = y + a.height;
+    //             var topSideY1 = y + b.height;
+
+    //             var d = topSideY0 - topSideY1;
+    //             if (d) {
+    //                 return d;
+    //             }
+
+    //             return a.x - b.x;
+    //         }
+    //     },
+
+    //     'ContactPoint': function(freeBox, packer) {
+    //         var width = freeBox.width;
+    //         var height = freeBox.height;
+    //         return function(a, b) {
+    //             var score0 = _contactPointScoreBox(a.x, a.y, width, height, packer);
+    //             var score1 = _contactPointScoreBox(b.x, b.y, width, height, packer);
+    //             return score1 - score0;
+    //         }
+    //     },
+    // };
+
 
     //////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////
