@@ -127,17 +127,12 @@ var MaxRectsPacking = MaxRectsPacking || {};
         result.unfitCount = inputCount - fitCount;
         result.done = result.unfitCount === 0;
 
+        // debugger
         if (padding) {
-            for (var i = 0; i < fitCount; i++) {
-                var rect = outputRects[i];
+            for (var i = 0; i < inputCount; i++) {
+                var rect = rectangles[i];
                 rect.width -= padding2;
                 rect.height -= padding2;
-
-                var fitInfo = rect.fitInfo;
-                fitInfo.x += padding;
-                fitInfo.y += padding;
-                fitInfo.width -= padding2;
-                fitInfo.height -= padding2;
             }
         }
 
@@ -222,6 +217,7 @@ var MaxRectsPacking = MaxRectsPacking || {};
             var rect = rectangles[i];
             var w0 = rect.width;
             var h0 = rect.height;
+            rect.fitInfo = null;
 
             var fitRect = this.findBestFreeBox(w0, h0, packRule);
             if (!fitRect) {
@@ -286,6 +282,12 @@ var MaxRectsPacking = MaxRectsPacking || {};
         }
 
         rect.fitInfo = fitInfo;
+
+        var padding = this.padding || 0;
+        fitInfo.x += padding;
+        fitInfo.y += padding;
+        fitInfo.width -= padding * 2;
+        fitInfo.height -= padding * 2;
 
         this._placeRectangle(fitRect);
     }
@@ -389,14 +391,15 @@ var MaxRectsPacking = MaxRectsPacking || {};
         var resultList = [];
 
         findBestRectList.forEach((_findBestRect, _findBestRectIndex) => {
-            sortRuleList.forEach((sortRule, sortIndex) => {
-                packRuleList.forEach((packRule, packIndex) => {
+            sortRuleList.forEach((_sortRule, _sortIndex) => {
+                packRuleList.forEach((_packRule, _packIndex) => {
                     this.reset();
                     this.findBestRect = _findBestRect;
-                    var result = this.fit(rectangles, packRule, sortRule, true);
+
+                    var result = this.fit(rectangles, _packRule, _sortRule, true);
                     if (result.done) {
-                        result._packRuleIndex = packIndex;
-                        result._sortRuleIndex = sortIndex;
+                        result._packRuleIndex = _packIndex;
+                        result._sortRuleIndex = _sortIndex;
                         result._findBestRectIndex = _findBestRectIndex;
                         resultList.push(result);
                         // console.log(result.packRule, result.realWidth, result.realHeight);
@@ -591,19 +594,32 @@ var MaxRectsPacking = MaxRectsPacking || {};
             expandY = expandX;
         }
 
+        var prevExpandX = expandX;
+        var prevExpandY = expandY;
+
         var newRight = Math.min(this.maxWidth, this.right + expandX);
         var newBottom = Math.min(this.maxHeight, this.bottom + expandY);
+
+
+        expandX = newRight - this.right;
+        expandY = newBottom - this.bottom;
+
+        if (expandX < prevExpandX) {
+            expandX = 0;
+            newRight = this.right;
+        }
+        if (expandY < prevExpandY) {
+            expandY = 0;
+            newBottom = this.bottom;
+        }
+
+        var areaX = expandX * this.bottom;
+        var areaY = this.right * expandY;
 
         var pow2X = Math.ceil(Math.log(this.right) * Math.LOG2E);
         var pow2Y = Math.ceil(Math.log(this.bottom) * Math.LOG2E);
         var deltaPow2X = Math.ceil(Math.log(newRight) * Math.LOG2E) - pow2X;
         var deltaPow2Y = Math.ceil(Math.log(newBottom) * Math.LOG2E) - pow2Y;
-
-        expandX = newRight - this.right;
-        expandY = newBottom - this.bottom;
-
-        var areaX = expandX * this.bottom;
-        var areaY = this.right * expandY;
 
         var firstX = false;
         if (expandX > 0) {
@@ -977,56 +993,64 @@ var MaxRectsPacking = MaxRectsPacking || {};
 
     var SORT = {
         widthASC: function(a, b) {
-            return a.width - b.width;
+            return a.width - b.width || a.height - b.height;
         },
         widthDESC: function(a, b) {
-            return b.width - a.width;
+            return b.width - a.width || b.height - a.height;
         },
         heightASC: function(a, b) {
-            return a.height - b.height;
+            return a.height - b.height || a.width - b.width;
         },
         heightDESC: function(a, b) {
-            return b.height - a.height;
+            return b.height - a.height || b.width - a.width;
         },
         shortSideASC: function(a, b) {
-            var sideA = Math.min(a.width, a.height);
-            var sideB = Math.min(b.width, b.height);
-            return sideA - sideB;
+            var shortA = Math.min(a.width, a.height);
+            var longA = Math.max(a.width, a.height);
+            var shortB = Math.min(b.width, b.height);
+            var longB = Math.max(b.width, b.height);
+            return shortA - shortB || longA - longB;
         },
         shortSideDESC: function(a, b) {
-            var sideA = Math.min(a.width, a.height);
-            var sideB = Math.min(b.width, b.height);
-            return sideB - sideA;
+            var shortA = Math.min(a.width, a.height);
+            var longA = Math.max(a.width, a.height);
+            var shortB = Math.min(b.width, b.height);
+            var longB = Math.max(b.width, b.height);
+            return shortB - shortA || longB - longA;
         },
         longSideASC: function(a, b) {
-            var sideA = Math.max(a.width, a.height);
-            var sideB = Math.max(b.width, b.height);
-            return sideA - sideB;
+            var shortA = Math.min(a.width, a.height);
+            var longA = Math.max(a.width, a.height);
+            var shortB = Math.min(b.width, b.height);
+            var longB = Math.max(b.width, b.height);
+            return longA - longB || shortA - shortB;
         },
         longSideDESC: function(a, b) {
-            var sideA = Math.max(a.width, a.height);
-            var sideB = Math.max(b.width, b.height);
-            return sideB - sideA;
+            var shortA = Math.min(a.width, a.height);
+            var longA = Math.max(a.width, a.height);
+            var shortB = Math.min(b.width, b.height);
+            var longB = Math.max(b.width, b.height);
+            return longB - longA || shortB - shortA;
         },
         areaASC: function(a, b) {
             var areaA = a.width * a.height;
             var areaB = b.width * b.height;
-            return areaA - areaB;
+            return areaA - areaB || a.width - b.width || a.height - b.height;
         },
         areaDESC: function(a, b) {
             var areaA = a.width * a.height;
             var areaB = b.width * b.height;
-            return areaB - areaA;
+            return areaB - areaA || b.width - a.width || b.height - a.height;
         },
         manhattanASC: function(a, b) {
             var manhattanA = a.width + a.height;
             var manhattanB = b.width + b.height;
-            return manhattanA - manhattanB;
+            return manhattanA - manhattanB || a.width - b.width || a.height - b.height;
         },
         manhattanDESC: function(a, b) {
             var manhattanA = a.width + a.height;
             var manhattanB = b.width + b.height;
-            return manhattanB - manhattanA;
+            return manhattanB - manhattanA || b.width - a.width || b.height - a.height;
         },
     }
 
