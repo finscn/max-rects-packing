@@ -47,7 +47,8 @@ function repack(reset) {
         "Can't pack. Rects are too many or too big." : [
             // "fit:" + result.fitCount + "/" + result.inputCount,
             result.width + "*" + result.height,
-            "RAM : " + Math.round(result.width * result.height / 1024) + "KB",
+            "RAM: " + Math.round(result.width * result.height / 1024) + "KB",
+            "POT: " + Math.round(getBiggerPOT(result.width) * getBiggerPOT(result.height) / 1024) + "KB",
         ].join(" ; ");
 
     $id("out-info-0").innerHTML = info;
@@ -172,10 +173,10 @@ function createTestRects(count) {
     for (var i = 0; i < count; i++) {
         // var w = randomFloat(MIN_RECT_SIDE / 10, MAX_RECT_SIDE / 10) * 10
         var w = step * (randomInt(1, 9) / 10)
-        w += MIN_RECT_SIDE;
+        w += MIN_RECT_SIDE + randomInt(-5, 5);
 
         var h = step * (randomInt(1, 9) / 10)
-        h += MIN_RECT_SIDE;
+        h += MIN_RECT_SIDE + randomInt(-5, 5);
 
         // var h = w * (1.0 + randomInt(-8, 8) / 10)
 

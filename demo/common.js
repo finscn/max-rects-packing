@@ -9,6 +9,15 @@ function generateRandomFunction(seed) {
 
 myRandom = generateRandomFunction(123123);
 
+
+function getSmallerPOT(value){
+    return Math.pow(2, Math.floor(Math.log(value) * Math.LOG2E))
+}
+
+function getBiggerPOT(value){
+    return Math.pow(2, Math.ceil(Math.log(value) * Math.LOG2E))
+}
+
 function randomInt(min, max, randomFn) {
     randomFn = randomFn || myRandom || Math.random;
     return ((max - min + 1) * randomFn() + min) >> 0;

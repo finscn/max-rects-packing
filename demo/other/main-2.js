@@ -15,7 +15,8 @@ function comparePack(inputRects) {
         "Can't pack. Rects are too many or too big." : [
             // "fit:" + result.fitCount + "/" + inputCount,
             result.width + "*" + result.height,
-            "RAM : " + Math.round(result.width * result.height / 1024) + "KB",
+            "RAM: " + Math.round(result.width * result.height / 1024) + "KB",
+            "POT: " + Math.round(getBiggerPOT(result.width) * getBiggerPOT(result.height) / 1024) + "KB",
         ].join(" ; ");
     $id("out-info-1").innerHTML = info;
 
