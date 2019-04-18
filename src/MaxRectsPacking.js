@@ -8,7 +8,7 @@ var MaxRectsPacking = MaxRectsPacking || {};
      * @param {Number} maxWidth - The max width of container
      * @param {Number} maxHeight - The max height of container
      * @param {Object} options - options of packing:
-     *        findBestRect: try to find the best rect for free-boxes
+     *        findBestRect: try to find the best rect for free-boxes (null to try all)
      *        allowRotate:  allow rotate the rects
      *        pot:  use power of 2 sizing
      *        padding:  the border padidng of each rectangle
