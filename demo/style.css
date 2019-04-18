@@ -6,22 +6,27 @@ body {
 }
 
 .control {
-    position: absolute;
-    top:0px;
-    right:0px;
+    position: fixed;
+    top: 0px;
+    right: 0px;
     /*float: right;*/
     padding: 10px;
-    border: 1px solid #eeeeee;
+    background-color: rgba(255, 255, 255, 0.7);
+    border: 1px solid #dddddd;
 }
+
 .control div {
     margin: 10px;
 }
+
 .output {
     padding: 20px;
 }
-.output span {
+
+.out-info {
+    margin-left: 4px;
     background-color: #FFDDCC;
-    padding:4px;
+    padding: 4px;
 }
 
 .source {}
@@ -29,6 +34,11 @@ body {
 .source img {
     height: 300px;
     border: 1px solid #aaa;
+}
+
+button {
+    font-size: 16px;
+    padding: 4px;
 }
 
 h3 {

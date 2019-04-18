@@ -1,9 +1,23 @@
-function randomInt(min, max) {
-    return ((max - min + 1) * Math.random() + min) >> 0;
+function generateRandomFunction(seed) {
+    seed = seed || (Date.now() & 0xFFFFFF - 1);
+    // console.log("Random seed : " + seed);
+    return function() {
+        seed = (1103515245 * seed + 12345) & 2147483647;
+        return seed / 2147483648;
+    };
 }
 
-function randomFloat(min, max) {
-    return ((max - min + 1) * Math.random() + min);
+myRandom = generateRandomFunction(123123);
+
+function randomInt(min, max, randomFn) {
+    randomFn = randomFn || myRandom || Math.random;
+    return ((max - min + 1) * randomFn() + min) >> 0;
+}
+
+
+function randomFloat(min, max, randomFn) {
+    randomFn = randomFn || myRandom || Math.random;
+    return ((max - min + 1) * randomFn() + min);
 }
 
 function $id(id) {
@@ -20,8 +34,6 @@ function drawRect(ctx, rect, color, borderColor) {
     var index = rect.index || 0;
 
     ctx.save();
-    ctx.strokeStyle = borderColor || RECT_BORDER_COLOR;
-    ctx.fillStyle = color || RECT_COLOR;
 
     ctx.translate(x, y);
     x = 0;
@@ -34,8 +46,11 @@ function drawRect(ctx, rect, color, borderColor) {
 
         y = -h;
     }
+
+    ctx.fillStyle = borderColor || RECT_BORDER_COLOR;
     ctx.fillRect(x, y, w, h);
-    ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
+    ctx.fillStyle = color || RECT_COLOR;
+    ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
 
     ctx.fillStyle = "#000000";
     ctx.font = "16px";
@@ -47,5 +62,5 @@ function drawRect(ctx, rect, color, borderColor) {
 
 window.onload = function() {
     repack();
-    startPackOne()
+    // startPackOne()
 }

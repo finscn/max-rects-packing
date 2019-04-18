@@ -7,18 +7,45 @@
     <link rel="stylesheet" href="style.css">
     <script type="text/javascript" src="../src/MaxRectsPacking.js"></script>
     <script type="text/javascript" src="common.js"></script>
-    <script type="text/javascript" src="data.js"></script>
+    <script type="text/javascript" src="main.js"></script>
+
+    <script type="text/javascript" src="other/MaxRectsBinPack.js"></script>
+    <script type="text/javascript" src="other/main-2.js"></script>
 </head>
 
 <body>
     <div class="control">
-        <div>rule: <select id="rule" onchange="repack()">
-                <option value="0" selected>Try all rules</option>
-                <option value="1">ShortSideFit</option>
+        <div><button type="button" onclick="repack(true)">re-generate rects</button></div>
+        <div>packRule: <select id="packRule" onchange="repack()">
+                <option value="0">Try all</option>
+                <option value="1" selected>ShortSideFit</option>
                 <option value="2">LongSideFit</option>
                 <option value="3">AreaFit</option>
                 <option value="4">BottomLeft</option>
                 <option value="5">ContactPoint</option>
+            </select>
+        </div>
+        <div>sortRule: <select id="sortRule" onchange="repack()">
+                <option value="0" selected>Try all</option>
+                <option value="1">Don't sort</option>
+                <option value="2">width DESC</option>
+                <option value="3">height DESC</option>
+                <option value="4">shortSide DESC</option>
+                <option value="5">longSide DESC</option>
+                <option value="6">area DESC</option>
+                <option value="7">manhattan DESC</option>
+                <option value="8">width ASC</option>
+                <option value="9">height ASC</option>
+                <option value="10">shortSide ASC</option>
+                <option value="11">longSide ASC</option>
+                <option value="12">area ASC</option>
+                <option value="13">manhattan ASC</option>
+            </select>
+        </div>
+        <div>findBestRect: <select id="findBestRect" onchange="repack()">
+                <option value="null">Try all</option>
+                <option value="false" selected>false</option>
+                <option value="true">true</option>
             </select>
         </div>
         <div>allowRotate: <input id="allowRotate" type="checkbox" onchange="repack()"></div>
@@ -35,18 +62,14 @@
         </div>
     </div>
     <div class="output">
-        <h3>max-rects-packing output <span id="out-info-0"></span></h3>
+        <h3>max-rects-packing output <span class="out-info" id="out-info-0"></span></h3>
         <canvas id="texture-0"></canvas>
     </div>
     <hr>
-<!--     <div class="output">
-        <h3>MaxRectsBinPack output</h3>
+    <div class="output">
+        <h3>MaxRectsBinPack output<span class="out-info" id="out-info-1"></span></h3>
         <canvas id="texture-1"></canvas>
     </div>
-    <div class="output">
-        <h3>maxrects-packer output</h3>
-        <canvas id="texture-2"></canvas>
-    </div> -->
 </body>
 
 </html>
