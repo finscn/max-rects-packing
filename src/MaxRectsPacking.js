@@ -532,16 +532,10 @@ var MaxRectsPacking = MaxRectsPacking || {};
         }
     }
 
-    Packer.prototype.expandFreeSpace = function(width, height, packRule) {
-        if (this.right >= this.maxWidth && this.bottom >= this.maxHeight) {
-            return false;
-        }
-        // return false;
-
+    Packer.prototype.getExpandInfo = function(width, height, packRule) {
         var expandX = width;
         var expandY = height;
 
-        var expand = false;
         var rightList = [];
         var bottomList = [];
 
@@ -550,7 +544,6 @@ var MaxRectsPacking = MaxRectsPacking || {};
         if (this.freeRectangles.length === 0) {
             addNewBox = true;
         } else {
-
             this.freeRectangles.forEach(rect => {
                 if (rect.x + rect.width === this.right) {
                     rightList.push(rect);
@@ -580,10 +573,6 @@ var MaxRectsPacking = MaxRectsPacking || {};
             if (freeBoxBottom) {
                 expandY = height - freeBoxBottom.height;
             }
-
-            // if (!freeBoxRight && !freeBoxBottom) {
-            //     addNewBox = true;
-            // }
         }
 
         if (this.square) {
@@ -624,35 +613,85 @@ var MaxRectsPacking = MaxRectsPacking || {};
             firstX = firstX || expandY === 0;
         }
 
+        var area = 0;
+        var newAreaWidth = this.right;
+        var newAreaHeight = this.bottom;
+
+        var expandInfo = {
+            expandX: 0,
+            expandY: 0,
+            area: 0,
+            addNewBox: addNewBox,
+            rightList: rightList,
+            bottomList: bottomList,
+        };
+
         if (expandX > 0 && (firstX || this.square)) {
+            area += expandX * newAreaHeight;
+            newAreaWidth = newRight;
+            expandInfo.expandX = expandX;
+        }
+        if (expandY > 0 && (!firstX || this.square)) {
+            area += expandY * newAreaWidth;
+            newAreaHeight = newBottom;
+            expandInfo.expandY = expandY;
+        }
+
+        expandInfo.area = area;
+
+        return expandInfo;
+    }
+
+    Packer.prototype.expandFreeSpace = function(width, height, packRule, test) {
+        if (this.right >= this.maxWidth && this.bottom >= this.maxHeight) {
+            return false;
+        }
+
+        var info = this.getExpandInfo(width, height, packRule);
+        if (this.rotated) {
+            var infoR = this.getExpandInfo(height, width, packRule);
+            if (!info.area && !infoR.area) {
+                return false;
+            }
+            if (infoR.area < info.area) {
+                info = infoR;
+            }
+        }
+
+        var addNewBox = info.addNewBox;
+        var expandX = info.expandX;
+        var expandY = info.expandY;
+
+        var expand = false;
+
+        if (expandX > 0) {
             if (addNewBox) {
                 this.freeRectangles.push(new Rect(this.right, 0, expandX, this.bottom));
                 expand = true;
             } else {
-                rightList.forEach(function(rect) {
+                info.rightList.forEach(function(rect) {
                     rect.width += expandX;
                     expand = true;
                 });
             }
-            this.right = newRight;
+            this.right += expandX;
         }
 
-        if (expandY > 0 && (!firstX || this.square)) {
+        if (expandY > 0) {
             if (addNewBox) {
                 this.freeRectangles.push(new Rect(0, this.bottom, this.right, expandY));
                 expand = true;
             } else {
-                bottomList.forEach(function(rect) {
+                info.bottomList.forEach(function(rect) {
                     rect.height += expandY;
                     expand = true;
                 });
             }
-            this.bottom = newBottom;
+            this.bottom += expandY;
         }
 
         return expand;
     }
-
 
     Packer.prototype.cloneRectangles = function(rectangles) {
         var newRectangles = [];
