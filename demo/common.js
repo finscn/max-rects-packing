@@ -7,14 +7,13 @@ function generateRandomFunction(seed) {
     };
 }
 
-myRandom = generateRandomFunction(123123);
+myRandom = generateRandomFunction(1234567890);
 
-
-function getSmallerPOT(value){
+function getSmallerPOT(value) {
     return Math.pow(2, Math.floor(Math.log(value) * Math.LOG2E))
 }
 
-function getBiggerPOT(value){
+function getBiggerPOT(value) {
     return Math.pow(2, Math.ceil(Math.log(value) * Math.LOG2E))
 }
 
@@ -69,8 +68,6 @@ function drawRect(ctx, rect, color, borderColor) {
         ctx.font = "16px";
         ctx.fillText(index, x + 1, y + 10);
     }
-
-
 
     ctx.restore();
 }
