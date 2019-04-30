@@ -207,6 +207,9 @@ var MaxRectsPacking = MaxRectsPacking || {};
         var outputRects = [];
         var processedFlag = {};
 
+        // TODO: chose the best expand-direction by _expandIndex ?
+        this._expandIndex = 0;
+
         for (var i = 0; i < rectangles.length; i++) {
             if (processedFlag[i]) {
                 continue;
@@ -392,8 +395,8 @@ var MaxRectsPacking = MaxRectsPacking || {};
                 packRuleList.forEach((_packRule, _packIndex) => {
                     this.reset();
                     this.findBestRect = _findBestRect;
-
-                    var result = this.fit(rectangles, _packRule, _sortRule, true);
+                    var _rectangles = rectangles.slice(0);
+                    var result = this.fit(_rectangles, _packRule, _sortRule, true);
                     if (result.done) {
                         result._packRuleIndex = _packIndex;
                         result._sortRuleIndex = _sortIndex;
@@ -586,7 +589,6 @@ var MaxRectsPacking = MaxRectsPacking || {};
         var newRight = Math.min(this.maxWidth, this.right + expandX);
         var newBottom = Math.min(this.maxHeight, this.bottom + expandY);
 
-
         expandX = newRight - this.right;
         expandY = newBottom - this.bottom;
 
@@ -642,7 +644,7 @@ var MaxRectsPacking = MaxRectsPacking || {};
         return expandInfo;
     }
 
-    Packer.prototype.expandFreeSpace = function(width, height, packRule, test) {
+    Packer.prototype.expandFreeSpace = function(width, height, packRule) {
         if (this.right >= this.maxWidth && this.bottom >= this.maxHeight) {
             return false;
         }
@@ -667,27 +669,27 @@ var MaxRectsPacking = MaxRectsPacking || {};
         if (expandX > 0) {
             if (addNewBox) {
                 this.freeRectangles.push(new Rect(this.right, 0, expandX, this.bottom));
-                expand = true;
             } else {
                 info.rightList.forEach(function(rect) {
                     rect.width += expandX;
-                    expand = true;
                 });
             }
             this.right += expandX;
+            this._expandIndex++;
+            expand = true;
         }
 
         if (expandY > 0) {
             if (addNewBox) {
                 this.freeRectangles.push(new Rect(0, this.bottom, this.right, expandY));
-                expand = true;
             } else {
                 info.bottomList.forEach(function(rect) {
                     rect.height += expandY;
-                    expand = true;
                 });
             }
             this.bottom += expandY;
+            this._expandIndex++;
+            expand = true;
         }
 
         return expand;
