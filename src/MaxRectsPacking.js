@@ -623,6 +623,8 @@ var MaxRectsPacking = MaxRectsPacking || {};
             firstX: firstX,
             expandX: 0,
             expandY: 0,
+            areaX: 0,
+            areaY: 0,
             area: 0,
             addNewBox: addNewBox,
             rightList: rightList,
@@ -633,11 +635,13 @@ var MaxRectsPacking = MaxRectsPacking || {};
             area += expandX * newAreaHeight;
             newAreaWidth = newRight;
             expandInfo.expandX = expandX;
+            expandInfo.areaX = areaX;
         }
         if (expandY > 0 && (!firstX || this.square)) {
             area += expandY * newAreaWidth;
             newAreaHeight = newBottom;
             expandInfo.expandY = expandY;
+            expandInfo.areaY = areaY;
         }
 
         expandInfo.area = area;
