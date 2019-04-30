@@ -218,7 +218,7 @@ var MaxRectsPacking = MaxRectsPacking || {};
 
             var fitRect = this.findBestFreeBox(w0, h0, packRule);
             if (!fitRect) {
-                if (this.allowRotate) {
+                if (this.allowRotate && w0 !== h0) {
                     fitRect = this.findBestFreeBox(h0, w0, packRule);
                 }
                 if (!fitRect) {
@@ -234,7 +234,7 @@ var MaxRectsPacking = MaxRectsPacking || {};
                                 break;
                             }
                             fitRect = this.findBestFreeBox(rect2.width, rect2.height, packRule);
-                            if (!fitRect && this.allowRotate) {
+                            if (!fitRect && this.allowRotate && rect2.width !== rect2.height) {
                                 fitRect = this.findBestFreeBox(rect2.height, rect2.width, packRule);
                             }
                             if (fitRect) {
@@ -648,7 +648,7 @@ var MaxRectsPacking = MaxRectsPacking || {};
         }
 
         var info = this.getExpandInfo(width, height, packRule);
-        if (this.rotated) {
+        if (this.allowRotate && width !== height) {
             var infoR = this.getExpandInfo(height, width, packRule);
             if (!info.area && !infoR.area) {
                 return false;
