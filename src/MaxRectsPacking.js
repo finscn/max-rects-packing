@@ -620,6 +620,7 @@ var MaxRectsPacking = MaxRectsPacking || {};
         var newAreaHeight = this.bottom;
 
         var expandInfo = {
+            firstX: firstX,
             expandX: 0,
             expandY: 0,
             area: 0,
@@ -661,6 +662,7 @@ var MaxRectsPacking = MaxRectsPacking || {};
         }
 
         var addNewBox = info.addNewBox;
+        // var firstX = info.firstX;
         var expandX = info.expandX;
         var expandY = info.expandY;
 
